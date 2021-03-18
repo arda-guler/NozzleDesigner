@@ -143,6 +143,7 @@ def computeNozzle():
         if second_curve_y > exit_radius:
             break
 
+    # File output
     if not excelFilename == "" or excelFilename == None:
         if len(excelFilename) > 5 and excelFilename[-5] == ".":
             exportFile = excelFilename
@@ -157,16 +158,16 @@ def computeNozzle():
 
         inputSaveFile = exportFile[0:-5] + ".txt"
         result_file = open(inputSaveFile, "w")
-        result_file.write("INPUTS")
-        result_file.write(" throat radius: ")
-        result_file.write( str(throat_radius))
-        result_file.write(" chamber radius: ")
-        result_file.write(str(chamber_radius))
-        result_file.write(" exit radiues: ")
-        result_file.write(str(exit_radius))
-        result_file.write(" throat angle: ")
-        result_file.write(str(delta_n))
-        result_file.write(" exit angle: ")
+        result_file.write("INPUTS\n\n")
+        result_file.write("Throat radius: ")
+        result_file.write(str(throat_radius)+"\n")
+        result_file.write("Chamber radius: ")
+        result_file.write(str(chamber_radius)+"\n")
+        result_file.write("Exit radiues: ")
+        result_file.write(str(exit_radius)+"\n")
+        result_file.write("Throat angle: ")
+        result_file.write(str(delta_n)+"\n")
+        result_file.write("Exit angle: ")
         result_file.write(str(delta_e))
         result_file.close()
 
@@ -189,7 +190,7 @@ with window("Inputs", width=450, height=350):
     #print("Program running.") #ultimate debug strategy :)
     
     set_window_pos("Inputs", 10, 10)
-    add_text("Enter floating point values in all fields.")
+    add_text("Enter design parameters in float values.")
     add_spacing(count=6)
     add_input_text(name = "throat_radius_field", label = "Throat Radius (mm)")
     add_input_text(name = "exit_radius_field", label = "Exit Radius (mm)")
@@ -198,7 +199,7 @@ with window("Inputs", width=450, height=350):
     add_input_text(name = "delta_n_field", label = "Delta n")
     add_input_text(name = "theta_FC_field", label = "Theta FC")
     add_spacing(count=6)
-    add_input_text(name = "filename_field", label = "Export Filename")
+    add_input_text(name = "filename_field", label = "Export Filename", tip = "Leave blank to skip export. File extension is automatic.")
     add_spacing(count=6)
     add_button("Compute Nozzle Geometry", callback = computeNozzle)
 
@@ -207,6 +208,6 @@ with window("Output", width=500, height=400):
     set_window_pos("Output", 470, 10)
     add_input_text(name="exit_angle_output", label="Exit Angle (deg)", source="exit_angle", readonly=True, enabled=False)
     add_plot(name="nozzle_geometry", label="Nozzle Geometry",
-             x_axis_name="X Axis (mm)", y_axis_name = "Y Axis (mm)")
+             x_axis_name="X Axis (mm)", y_axis_name = "Y Axis (mm)", equal_aspects = True)
 
 start_dearpygui()
