@@ -8,21 +8,9 @@ import numpy as np
 import pandas as pd
 
 #set initial window configuration (purely cosmetic)
-set_main_window_size(1000, 600)
-set_main_window_title("MRS - RAO NOZZLE DESIGNER")
+set_main_window_size(1000, 650)
+set_main_window_title("Rao Nozzle Designer | MRS")
 set_theme("Dark")
-
-#init values at start for safety measures
-throat_radius = 0
-exit_radius = 0
-chamber_radius = 0
-expansion_ratio = 0
-delta_n = 0
-theta_FC = 0
-
-first_curve_dict = {}
-second_curve_dict = {}
-parabolic_curve_dict = {}
 
 # Calculation sub-functions
 
@@ -64,7 +52,7 @@ def exit_angle(Ln, throat_radius,exit_radius):
 ################################
 
 def computeNozzle():
-    print("Computing nozzle geometry...")
+    log_info(message = "Computing nozzle geometry...", logger = "Logs")
     try:
         throat_radius = float(get_value("throat_radius_field"))
         exit_radius = float(get_value("exit_radius_field"))
@@ -75,9 +63,18 @@ def computeNozzle():
 
         excelFilename = get_value("filename_field")
     except:
-        print("Input error.")
+        log_error("Input error. Make sure all design parameters are float values and export filename doesn't include illegal characters.", logger = "Logs")
+
+    log_info("Inputs:\n" +
+             "Throat Radius: " + str(throat_radius) + " mm\n"
+             "Exit Radius: " + str(exit_radius) + " mm\n"
+             "Chamber Radius: " + str(chamber_radius) + " mm\n"
+             "Expansion Ratio: " + str(expansion_ratio) + "\n"
+             "Delta n: " + str(delta_n) + "\n"
+             "Theta FC: " + str(theta_FC), logger = "Logs")
 
     # Make sure we clean up dicts before running the next calculation
+    
     first_curve_dict = {}
     second_curve_dict = {}
     parabolic_curve_dict = {}
@@ -119,6 +116,7 @@ def computeNozzle():
     delta_e = exit_angle(Ln, throat_radius, exit_radius)
 
     # Update exit angle to display
+    
     set_value(name = "exit_angle", value = delta_e)
 
     # Parabolic curve
@@ -127,7 +125,7 @@ def computeNozzle():
     second_curve_y = max(second_curve_dict.values())
 
 
-    i_matrix = paraboliccurvematrix(exit_radius,Ln,delta_n,second_curve_x, second_curve_y )
+    i_matrix = paraboliccurvematrix(exit_radius, Ln,delta_n, second_curve_x, second_curve_y)
 
     a = i_matrix[0]
     b = i_matrix[1]
@@ -145,12 +143,15 @@ def computeNozzle():
 
     # File output
     if not excelFilename == "" or excelFilename == None:
+        log_info("Attempting export...", logger = "Logs")
         if len(excelFilename) > 5 and excelFilename[-5] == ".":
             exportFile = excelFilename
         else:
             exportFile = excelFilename + ".xlsx"
             
-        rao_nozzle = {'Xfc': list(first_curve_dict.keys()),'Yfc': list(first_curve_dict.values()), 'Xsc': list(second_curve_dict.keys()), 'Ysc': list(second_curve_dict.values()), 'Pxc': parabolic_x, 'Pyc': parabolic_y}
+        rao_nozzle = {'X_First_Curve': list(first_curve_dict.keys()),'Y_First_Curve': list(first_curve_dict.values()),
+                      'X_Second_Curve': list(second_curve_dict.keys()), 'Y_Second_Curve': list(second_curve_dict.values()),
+                      'X_Parabolic_Curve': parabolic_x, 'Y_Parabolic_Curve': parabolic_y}
         rao_nozzle_df = pd.DataFrame(rao_nozzle)
 
         #rao_nozzle_df.to_excel("rao_nozzle_geometry.xlsx", sheet_name= "coordinates",)
@@ -171,13 +172,13 @@ def computeNozzle():
         result_file.write(str(delta_e))
         result_file.close()
 
-        print("Successfully saved geometry to " + exportFile)
-        print("Inputs saved in " + inputSaveFile)
+        log_info("Successfully saved geometry to " + exportFile, logger = "Logs")
+        log_info("Inputs saved in " + inputSaveFile, logger = "Logs")
 
     else:
-        print("Skipping export...")
+        log_info("Skipping export...", logger = "Logs")
 
-    print("Done.")
+    log_info("Done.", logger = "Logs")
 
     #add data to plot
     add_line_series(name="Upstream Curve" , plot="nozzle_geometry",x=list(first_curve_dict.keys()), y=list(first_curve_dict.values()))
@@ -185,11 +186,8 @@ def computeNozzle():
     add_line_series(name="Parabolic Curve" , plot="nozzle_geometry",x=parabolic_x, y=parabolic_y)
 
 #INPUTS WINDOW
-with window("Inputs", width=450, height=350):
-    
-    #print("Program running.") #ultimate debug strategy :)
-    
-    set_window_pos("Inputs", 10, 10)
+with window("Input", width=450, height=350):   
+    set_window_pos("Input", 10, 10)
     add_text("Enter design parameters in float values.")
     add_spacing(count=6)
     add_input_text(name = "throat_radius_field", label = "Throat Radius (mm)")
@@ -209,5 +207,10 @@ with window("Output", width=500, height=400):
     add_input_text(name="exit_angle_output", label="Exit Angle (deg)", source="exit_angle", readonly=True, enabled=False)
     add_plot(name="nozzle_geometry", label="Nozzle Geometry",
              x_axis_name="X Axis (mm)", y_axis_name = "Y Axis (mm)", equal_aspects = True)
+
+#LOG WINDOW
+with window("Log", width=450, height=200):
+    set_window_pos("Log", 10, 370)
+    add_logger("Logs", log_level=0, autosize_x = True, autosize_y = True)
 
 start_dearpygui()
