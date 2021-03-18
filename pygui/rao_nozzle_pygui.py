@@ -12,6 +12,30 @@ set_main_window_size(1000, 650)
 set_main_window_title("Rao Nozzle Designer | MRS")
 set_theme("Dark")
 
+def importFile():
+    try:
+        import_filepath = get_value("load_path_field")
+        log_info("Importing inputs from " + import_filepath, logger="Logs")
+        import_file = open(import_filepath, "r")
+    except:
+        log_error("Import failed. Check filepath.", logger="Logs")
+        return
+
+    try:
+        import_lines = import_file.readlines()
+        set_value(name="throat_radius_field", value=import_lines[2][15:-1])
+        set_value(name="exit_radius_field", value=import_lines[3][13:-1])
+        set_value(name="chamber_radius_field", value=import_lines[4][16:-1])
+        set_value(name="expansion_ratio_field", value=import_lines[5][17:-1])
+        set_value(name="delta_n_field", value=import_lines[6][24:-1])
+        set_value(name="theta_FC_field", value=import_lines[7][10:-1])
+    except:
+        log_error("Import failed. Check file formatting.", logger="Logs")
+        return
+    
+    log_info("Import successful.", logger="Logs")
+  
+
 # Calculation sub-functions
 
 def nozzle_length(throat_radius, expansion_ratio):
@@ -148,32 +172,41 @@ def computeNozzle():
             exportFile = excelFilename
         else:
             exportFile = excelFilename + ".xlsx"
-            
-        rao_nozzle = {'X_First_Curve': list(first_curve_dict.keys()),'Y_First_Curve': list(first_curve_dict.values()),
-                      'X_Second_Curve': list(second_curve_dict.keys()), 'Y_Second_Curve': list(second_curve_dict.values()),
-                      'X_Parabolic_Curve': parabolic_x, 'Y_Parabolic_Curve': parabolic_y}
-        rao_nozzle_df = pd.DataFrame(rao_nozzle)
 
-        #rao_nozzle_df.to_excel("rao_nozzle_geometry.xlsx", sheet_name= "coordinates",)
-        rao_nozzle_df.to_excel(exportFile, sheet_name= "coordinates",)
+        try:
+            rao_nozzle = {'X_First_Curve': list(first_curve_dict.keys()),'Y_First_Curve': list(first_curve_dict.values()),
+                          'X_Second_Curve': list(second_curve_dict.keys()), 'Y_Second_Curve': list(second_curve_dict.values()),
+                          'X_Parabolic_Curve': parabolic_x, 'Y_Parabolic_Curve': parabolic_y}
+            rao_nozzle_df = pd.DataFrame(rao_nozzle)
 
-        inputSaveFile = exportFile[0:-5] + ".txt"
-        result_file = open(inputSaveFile, "w")
-        result_file.write("INPUTS\n\n")
-        result_file.write("Throat radius: ")
-        result_file.write(str(throat_radius)+"\n")
-        result_file.write("Chamber radius: ")
-        result_file.write(str(chamber_radius)+"\n")
-        result_file.write("Exit radiues: ")
-        result_file.write(str(exit_radius)+"\n")
-        result_file.write("Throat angle: ")
-        result_file.write(str(delta_n)+"\n")
-        result_file.write("Exit angle: ")
-        result_file.write(str(delta_e))
-        result_file.close()
+            rao_nozzle_df.to_excel(exportFile, sheet_name= "coordinates",)
+            log_info("Successfully saved geometry to " + exportFile, logger = "Logs")
+        except:
+            log_error("Excel export failed.", logger = "Logs")
 
-        log_info("Successfully saved geometry to " + exportFile, logger = "Logs")
-        log_info("Inputs saved in " + inputSaveFile, logger = "Logs")
+        try:
+            inputSaveFile = exportFile[0:-5] + ".txt"
+            result_file = open(inputSaveFile, "w")
+            result_file.write("INPUTS\n\n")
+            result_file.write("Throat radius: ")
+            result_file.write(str(throat_radius)+"\n")
+            result_file.write("Exit radius: ")
+            result_file.write(str(exit_radius)+"\n")
+            result_file.write("Chamber radius: ")
+            result_file.write(str(chamber_radius)+"\n")
+            result_file.write("Expansion ratio: ")
+            result_file.write(str(expansion_ratio)+"\n")
+            result_file.write("Throat angle (delta n): ")
+            result_file.write(str(delta_n)+"\n")
+            result_file.write("Theta FC: ")
+            result_file.write(str(get_value("theta_FC_field"))+"\n")
+            result_file.write("\nOUTPUTS\n\n")
+            result_file.write("Exit angle: ")
+            result_file.write(str(delta_e)+"\n")
+            result_file.close()
+            log_info("Inputs saved in " + inputSaveFile, logger = "Logs")
+        except:
+            log_error("TXT export failed.", logger = "Logs")  
 
     else:
         log_info("Skipping export...", logger = "Logs")
@@ -194,12 +227,18 @@ with window("Input", width=450, height=350):
     add_input_text(name = "exit_radius_field", label = "Exit Radius (mm)")
     add_input_text(name = "chamber_radius_field", label = "Chamber Radius (mm)")
     add_input_text(name = "expansion_ratio_field", label = "Expansion Ratio")
-    add_input_text(name = "delta_n_field", label = "Delta n")
+    add_input_text(name = "delta_n_field", label = "Delta n (Throat Angle, deg)")
     add_input_text(name = "theta_FC_field", label = "Theta FC")
     add_spacing(count=6)
     add_input_text(name = "filename_field", label = "Export Filename", tip = "Leave blank to skip export. File extension is automatic.")
     add_spacing(count=6)
     add_button("Compute Nozzle Geometry", callback = computeNozzle)
+    add_spacing(count=6)
+    add_text("Alternatively, you can import a previously saved .txt file.")
+    add_spacing(count=6)
+    add_input_text(name = "load_path_field", label = "Import Filepath", tip = "If the file is in the same directory with the script, you don't need\n to write the full path.")
+    add_spacing(count=6)
+    add_button("Import File", callback = importFile)
 
 #OUTPUTS WINDOW
 with window("Output", width=500, height=400):
