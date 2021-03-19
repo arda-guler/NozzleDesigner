@@ -12,12 +12,18 @@ set_main_window_size(1000, 650)
 set_main_window_title("Rao Nozzle Designer | MRS")
 set_theme("Dark")
 
+calc_run_number = 0
+
 def importFile():
     try:
         import_filepath = get_value("load_path_field")
         
         if not import_filepath[-4:] == ".txt":
-            import_filepath = import_filepath + ".txt"
+            if import_filepath[-5:] == ".xlsx":
+                log_warning("Exported .xlsx files don't contain input info. Trying " + import_filepath[:-5] + ".txt instead...", logger="Logs")
+                import_filepath = import_filepath[:-5] + ".txt"
+            else:
+                import_filepath = import_filepath + ".txt"
             
         log_info("Importing inputs from " + import_filepath, logger="Logs")
         import_file = open(import_filepath, "r")
@@ -38,49 +44,12 @@ def importFile():
         return
     
     log_info("Import successful.", logger="Logs")
-  
-
-# Calculation sub-functions
-
-def nozzle_length(throat_radius, expansion_ratio):
-    Ln = 0.80*(math.sqrt(expansion_ratio)-1)*throat_radius/math.tan(math.radians(15))
-    return Ln
-
-def firstcurve_xfc (theta_FC, throat_radius):
-    x_fc = float( math.cos(math.radians(theta_FC))*1.5*throat_radius)
-    return x_fc
-
-def firstcurve_yfc (theta_FC, throat_radius):
-    y_fc = float( math.sin(math.radians(theta_FC))*1.5*throat_radius + (1.5*throat_radius+throat_radius))
-    return y_fc
-
-def secondcurve_xsc (theta_SC, throat_radius):
-    x_sc = float( math.cos(math.radians(theta_SC))*0.382*throat_radius)
-    return x_sc
-
-def secondcurve_ysc (theta_SC, throat_radius):
-    y_sc = float(math.sin(math.radians(theta_SC))*0.382*throat_radius + (0.382*throat_radius+throat_radius))
-    return y_sc
-
-def paraboliccurvematrix (Y_exit,X_exit, delta_n, X_SC, Y_SC):
-    third_invariant = 1/(math.tan(math.radians(delta_n)))
-    arr = np.array([[Y_SC**2, Y_SC, 1.0], [Y_exit**2, Y_exit, 1.0], [Y_SC*2, 1.0, 0.0]])
-    para = np.linalg.inv(arr)
-    arr2 = np.array([X_SC, X_exit, third_invariant])
-    i_matrix = para.dot(arr2)
-    return i_matrix
-
-def exit_angle(Ln, throat_radius,exit_radius):
-    dy = exit_radius-throat_radius
-    delta_e = float (math.degrees(math.atan(dy/Ln)))
-    return delta_e
-
-################################
-#   THE ACTUAL CALCULATIONS
-################################
 
 def computeNozzle():
-    log_info(message = "Computing nozzle geometry...", logger = "Logs")
+    global calc_run_number
+    calc_run_number += 1
+    log_info(message = "Run [" + str(calc_run_number) + "]: Computing nozzle geometry...", logger = "Logs")
+    
     try:
         throat_radius = float(get_value("throat_radius_field"))
         exit_radius = float(get_value("exit_radius_field"))
@@ -106,6 +75,45 @@ def computeNozzle():
     first_curve_dict = {}
     second_curve_dict = {}
     parabolic_curve_dict = {}
+
+    ################################
+    #   THE ACTUAL CALCULATIONS
+    ################################
+
+    # Calculation sub-functions
+
+    def nozzle_length(throat_radius, expansion_ratio):
+        Ln = 0.80*(math.sqrt(expansion_ratio)-1)*throat_radius/math.tan(math.radians(15))
+        return Ln
+
+    def firstcurve_xfc (theta_FC, throat_radius):
+        x_fc = float( math.cos(math.radians(theta_FC))*1.5*throat_radius)
+        return x_fc
+
+    def firstcurve_yfc (theta_FC, throat_radius):
+        y_fc = float( math.sin(math.radians(theta_FC))*1.5*throat_radius + (1.5*throat_radius+throat_radius))
+        return y_fc
+
+    def secondcurve_xsc (theta_SC, throat_radius):
+        x_sc = float( math.cos(math.radians(theta_SC))*0.382*throat_radius)
+        return x_sc
+
+    def secondcurve_ysc (theta_SC, throat_radius):
+        y_sc = float(math.sin(math.radians(theta_SC))*0.382*throat_radius + (0.382*throat_radius+throat_radius))
+        return y_sc
+
+    def paraboliccurvematrix (Y_exit,X_exit, delta_n, X_SC, Y_SC):
+        third_invariant = 1/(math.tan(math.radians(delta_n)))
+        arr = np.array([[Y_SC**2, Y_SC, 1.0], [Y_exit**2, Y_exit, 1.0], [Y_SC*2, 1.0, 0.0]])
+        para = np.linalg.inv(arr)
+        arr2 = np.array([X_SC, X_exit, third_invariant])
+        i_matrix = para.dot(arr2)
+        return i_matrix
+
+    def exit_angle(Ln, throat_radius,exit_radius):
+        dy = exit_radius-throat_radius
+        delta_e = float (math.degrees(math.atan(dy/Ln)))
+        return delta_e
 
     # First curve calculations
 
@@ -169,11 +177,17 @@ def computeNozzle():
         if second_curve_y > exit_radius:
             break
 
+    ################################
+    #   NOZZLE CALCS. END HERE
+    ################################
+
     # File output
     if not excelFilename == "" or excelFilename == None:
         log_info("Attempting export...", logger = "Logs")
-        if len(excelFilename) > 5 and excelFilename[-5] == ".":
+        if len(excelFilename) > 5 and excelFilename[-5:] == ".xlsx":
             exportFile = excelFilename
+        elif len(excelFilename) > 4 and excelFilename[-4:] == ".txt":
+            exportFile = excelFilename[:-4] + ".xlsx"
         else:
             exportFile = excelFilename + ".xlsx"
 
@@ -231,6 +245,20 @@ def computeNozzle():
     add_line_series(name="Init. Exp. Curve" , plot="nozzle_geometry",x=list(second_curve_dict.keys()), y=list(second_curve_dict.values()))
     add_line_series(name="Parabolic Curve" , plot="nozzle_geometry",x=parabolic_x, y=parabolic_y)
 
+    if get_value("mirror_check"):
+        first_curve_y_mirrored = [-y for y in list(first_curve_dict.values())]
+        second_curve_y_mirrored = [-y for y in list(second_curve_dict.values())]
+        parabolic_y_mirrored = [-y for y in parabolic_y]
+        
+        add_line_series(name="Upstream Curve(M)" , plot="nozzle_geometry",x=list(first_curve_dict.keys()), y=first_curve_y_mirrored, color=(0,191,255,255))
+        add_line_series(name="Init. Exp. Curve(M)" , plot="nozzle_geometry",x=list(second_curve_dict.keys()), y=second_curve_y_mirrored, color=(255,0,0,255))
+        add_line_series(name="Parabolic Curve(M)" , plot="nozzle_geometry",x=parabolic_x, y=parabolic_y_mirrored, color=(127,255,0,255))
+    else:
+        #clean up mirrored curves (if any exists) so that they won't linger around after the checkbox is un-checked.
+        delete_series(plot="nozzle_geometry",series="Upstream Curve(M)")
+        delete_series(plot="nozzle_geometry",series="Init. Exp. Curve(M)")
+        delete_series(plot="nozzle_geometry",series="Parabolic Curve(M)")
+
 #INPUTS WINDOW
 with window("Input", width=450, height=350):   
     set_window_pos("Input", 10, 10)
@@ -246,10 +274,12 @@ with window("Input", width=450, height=350):
     add_input_text(name = "filename_field", label = "Export Filename", tip = "Leave blank to skip export. File extension is automatic.")
     add_spacing(count=6)
     add_button("Compute Nozzle Geometry", callback = computeNozzle)
+    add_same_line()
+    add_checkbox(name="mirror_check", label="Mirror Graph", tip="This only affects graph visualization. Exported data always uses the upper curve.")
     add_spacing(count=6)
     add_text("Alternatively, you can import a previously saved .txt file.")
     add_spacing(count=6)
-    add_input_text(name = "load_path_field", label = "Import Filepath", tip = "If the file is in the same directory with the script, you don't need\n to write the full path.")
+    add_input_text(name = "load_path_field", label = "Import Filepath", tip = "If the file is in the same directory with the script, you don't need\nto write the full path.")
     add_spacing(count=6)
     add_button("Import File", callback = importFile)
 
