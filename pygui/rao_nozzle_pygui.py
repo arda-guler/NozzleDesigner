@@ -15,6 +15,10 @@ set_theme("Dark")
 def importFile():
     try:
         import_filepath = get_value("load_path_field")
+        
+        if not import_filepath[-4:] == ".txt":
+            import_filepath = import_filepath + ".txt"
+            
         log_info("Importing inputs from " + import_filepath, logger="Logs")
         import_file = open(import_filepath, "r")
     except:
