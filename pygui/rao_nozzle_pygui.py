@@ -173,14 +173,23 @@ def computeNozzle():
         else:
             exportFile = excelFilename + ".xlsx"
 
-        try:
-            rao_nozzle = {'X_First_Curve': list(first_curve_dict.keys()),'Y_First_Curve': list(first_curve_dict.values()),
-                          'X_Second_Curve': list(second_curve_dict.keys()), 'Y_Second_Curve': list(second_curve_dict.values()),
-                          'X_Parabolic_Curve': parabolic_x, 'Y_Parabolic_Curve': parabolic_y}
-            rao_nozzle_df = pd.DataFrame(rao_nozzle)
+        try:           
+            rao_nozzle_fc = {'X_First_Curve': list(first_curve_dict.keys())[::-1],'Y_First_Curve': list(first_curve_dict.values())[::-1]}
+            # (first curve is inverted for excel export so that all x values are in increasing order)
+            rao_nozzle_sc = {'X_Second_Curve': list(second_curve_dict.keys()), 'Y_Second_Curve': list(second_curve_dict.values())}
+            rao_nozzle_pc = {'X_Parabolic_Curve': parabolic_x, 'Y_Parabolic_Curve': parabolic_y}
 
-            rao_nozzle_df.to_excel(exportFile, sheet_name= "coordinates",)
+            rao_nozzle_fc_df = pd.DataFrame(rao_nozzle_fc)
+            rao_nozzle_sc_df = pd.DataFrame(rao_nozzle_sc)
+            rao_nozzle_pc_df = pd.DataFrame(rao_nozzle_pc)
+
+            with pd.ExcelWriter(exportFile) as writer:
+                rao_nozzle_fc_df.to_excel(writer, sheet_name = 'coordinates', startcol=0)
+                rao_nozzle_sc_df.to_excel(writer, sheet_name = 'coordinates', startcol=3)
+                rao_nozzle_pc_df.to_excel(writer, sheet_name = 'coordinates', startcol=6)
+  
             log_info("Successfully saved geometry to " + exportFile, logger = "Logs")
+            
         except:
             log_error("Excel export failed.", logger = "Logs")
 
