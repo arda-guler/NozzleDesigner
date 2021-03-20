@@ -82,6 +82,20 @@ def computeNozzle():
 
     # Calculation sub-functions
 
+    def clamp(num, min_value, max_value):
+        return max(min(num, max_value), min_value)
+
+    def breakInfiniteLoop():
+        set_value(name = "exit_angle", value = "Last computation failed.")
+        delete_series(plot="nozzle_geometry",series="Upstream Curve")
+        delete_series(plot="nozzle_geometry",series="Init. Exp. Curve")
+        delete_series(plot="nozzle_geometry",series="Parabolic Curve")
+        delete_series(plot="nozzle_geometry",series="Upstream Curve(M)")
+        delete_series(plot="nozzle_geometry",series="Init. Exp. Curve(M)")
+        delete_series(plot="nozzle_geometry",series="Parabolic Curve(M)")
+        log_error("Infinite loop. Could not complete last computation.", logger="Logs")
+        return
+
     def nozzle_length(throat_radius, expansion_ratio):
         Ln = 0.80*(math.sqrt(expansion_ratio)-1)*throat_radius/math.tan(math.radians(15))
         return Ln
@@ -117,34 +131,49 @@ def computeNozzle():
 
     # First curve calculations
 
-    theta_initial = math.degrees(math.asin((chamber_radius - (1.5 * throat_radius + throat_radius))/(1.5*throat_radius)))
+    theta_initial = math.degrees(math.asin(clamp((chamber_radius - (1.5 * throat_radius + throat_radius))/(1.5*throat_radius), -1, 1)))
     fc_steps = (-90-theta_initial)/20
+
+    loop1_count = 0
 
     while True:
         x_fc = firstcurve_xfc(theta_FC = theta_FC, throat_radius = throat_radius)
         y_fc = firstcurve_yfc(theta_FC = theta_FC, throat_radius = throat_radius)
         first_curve_dict.update({ x_fc : y_fc })
         theta_FC = theta_FC + fc_steps
+        loop1_count += 1
 
         if y_fc >= chamber_radius :
             theta_FC = theta_FC - 2*fc_steps
             break
 
+        if loop1_count > 100000:
+            breakInfiniteLoop()
+            return
+
     # Second curve calculations
 
-    theta_SC = math.degrees(math.asin((throat_radius - (0.382 * throat_radius + throat_radius))/(0.382*throat_radius)))
+    # we have to use clamp() here because sometimes, due to floating point imprecision, we get a math domain error
+    theta_SC = math.degrees(math.asin(clamp((throat_radius - (0.382 * throat_radius + throat_radius))/(0.382*throat_radius), -1, 1)))
     Sc_steps = (delta_n)/22
+
+    loop2_count = 0
     while True:
 
         x_sc = secondcurve_xsc(theta_SC = theta_SC, throat_radius = throat_radius)
         y_sc = secondcurve_ysc(theta_SC = theta_SC, throat_radius = throat_radius)
         second_curve_dict.update({ x_sc : y_sc })
         theta_SC = theta_SC + Sc_steps
+        loop2_count += 1
 
         if theta_SC >= (delta_n - 90) :
             theta_SC = theta_SC - 2*Sc_steps
 
             break
+
+        if loop2_count > 100000:
+            breakInfiniteLoop()
+            return
 
     # Exit angle
 
@@ -169,13 +198,22 @@ def computeNozzle():
     parabolic_x = list()
     parabolic_y = list()
     parabolic_step=(exit_radius-second_curve_y)/21
+
+    loop3_count = 0
+    
     while True:
         px = a*second_curve_y**2+b*second_curve_y+c
         parabolic_x.append(px)
         parabolic_y.append(second_curve_y)
         second_curve_y = second_curve_y + parabolic_step
+        loop3_count += 1
+        
         if second_curve_y > exit_radius:
             break
+        
+        if loop3_count > 100000:
+            breakInfiniteLoop()
+            return
 
     ################################
     #   NOZZLE CALCS. END HERE
