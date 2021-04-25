@@ -1,7 +1,7 @@
 #   ---RAO NOZZLE DESIGNER---
 #   METU ROCKET SOCIETY, 2021
 #
-#   Version 1.1.0
+#   Version 1.1.1
 
 from dearpygui.core import *
 from dearpygui.simple import *
@@ -47,7 +47,7 @@ def importFile():
 
     try:
         import_lines = import_file.readlines()
-        if not import_lines[0][18:-1] == "1.1.0":
+        if not import_lines[0][18:-1] == "1.1.1":
             log_warning("Save file version does not match software version. Import might fail.", logger="Logs")
         
         set_value(name="throat_radius_field", value=import_lines[4][15:-1])
@@ -223,9 +223,9 @@ def computeNozzle():
         i_matrix = para.dot(arr2)
         return i_matrix
 
-    def exit_angle(Ln, throat_radius,exit_radius):
-        dy = exit_radius-throat_radius
-        delta_e = float (math.degrees(math.atan(dy/Ln)))
+    def exit_angle(Ln, iterative_radius, exit_radius):
+        dy = exit_radius-iterative_radius
+        delta_e = float(math.degrees(math.atan(dy/Ln)))
         return delta_e
 
     # First curve calculations
@@ -277,7 +277,7 @@ def computeNozzle():
     # Exit angle
 
     Ln = nozzle_length(throat_radius, expansion_ratio)
-    delta_e = exit_angle(Ln, throat_radius, exit_radius)
+    delta_e = exit_angle(Ln, max(second_curve_dict.values()), exit_radius)
 
     # Update exit angle to display    
     set_value(name = "exit_angle", value = delta_e)
