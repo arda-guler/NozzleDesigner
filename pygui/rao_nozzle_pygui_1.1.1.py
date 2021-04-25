@@ -101,7 +101,7 @@ def exportFile():
         try:
             inputSaveFile = exportFile[0:-5] + ".txt"
             result_file = open(inputSaveFile, "w")
-            result_file.write("Save file version 1.1.0\n\n")
+            result_file.write("Save file version 1.1.1\n\n")
             result_file.write("INPUTS\n\n")
             result_file.write("Throat radius: ")
             result_file.write(str(last_throat_radius)+"\n")
