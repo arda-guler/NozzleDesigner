@@ -1,7 +1,7 @@
 #   ---RAO NOZZLE DESIGNER---
 #   METU ROCKET SOCIETY, 2021
-#
-#   Version 1.1.1
+
+version = "1.2.0"
 
 from dearpygui.core import *
 from dearpygui.simple import *
@@ -28,7 +28,15 @@ last_first_curve = None
 last_second_curve = None
 last_parabolic_curve = None
 
+def browseSaves():  
+    open_file_dialog(extensions=".txt", callback=selectSave)
+
+def selectSave(dialog, save_path):
+    set_value("filepath_field", save_path[0] + "\\" + save_path[1])
+
 def importFile():
+    global version
+    
     try:
         import_filepath = get_value("filepath_field")
         
@@ -47,7 +55,7 @@ def importFile():
 
     try:
         import_lines = import_file.readlines()
-        if not import_lines[0][18:-1] == "1.1.1":
+        if not import_lines[0][18:-1] == str(version):
             log_warning("Save file version does not match software version. Import might fail.", logger="Logs")
         
         set_value(name="throat_radius_field", value=import_lines[4][15:-1])
@@ -63,6 +71,8 @@ def importFile():
     computeNozzle()
 
 def exportFile():
+    global version
+    
     if not calc_run_number > 0:
         log_error("Cannot export. Run the calculations first.", logger="Logs")
         return
@@ -101,7 +111,7 @@ def exportFile():
         try:
             inputSaveFile = exportFile[0:-5] + ".txt"
             result_file = open(inputSaveFile, "w")
-            result_file.write("Save file version 1.1.1\n\n")
+            result_file.write("Save file version " + str(version) + "\n\n")
             result_file.write("INPUTS\n\n")
             result_file.write("Throat radius: ")
             result_file.write(str(last_throat_radius)+"\n")
@@ -345,7 +355,9 @@ def computeNozzle():
 #FILE OPERATIONS BAR
 with window("File I/O", width=960, height=60, no_close=True, no_move=True):
     set_window_pos("File I/O", 10, 10)
-    add_input_text(name="filepath_field", label="Filepath", tip = "If the file is in the same directory with the script, you don't need\nto write the full path.")
+    add_button("Browse", callback = browseSaves)
+    add_same_line()
+    add_input_text(name="filepath_field", label="Filepath", width=600, tip = "If the file is in the same directory with the script, you don't need\nto write the full path.")
     add_same_line()
     add_button("Import", callback = importFile)
     add_same_line()
@@ -372,7 +384,7 @@ with window("Output", width=500, height=560, no_close=True):
     add_input_text(name="exit_angle_output", label="Exit Angle (deg)", source="exit_angle", readonly=True, enabled=False)
     add_input_text(name="nozzle_expansion_ratio_output", label="Nozzle Expansion Ratio", source="nozzle_expansion_ratio", readonly=True, enabled=False)
     add_input_text(name="chamber_contraction_ratio_output", label="Chamber Contraction Ratio", source="chamber_contraction_ratio", readonly=True, enabled=False)
-    add_plot(name="nozzle_geometry", label="Nozzle Geometry",
+    add_plot(name="nozzle_geometry", label="Nozzle Geometry", anti_aliased = True,
              x_axis_name="X Axis (mm)", y_axis_name = "Y Axis (mm)", equal_aspects = True)
 
 #LOG WINDOW
