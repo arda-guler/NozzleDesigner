@@ -1,0 +1,16 @@
+Save file version 1.2.1
+
+INPUTS
+
+Throat radius: 30.0
+Exit radius: 85.0
+Chamber radius: 50.0
+Throat angle (delta n): 25.0
+Theta FC: -90.0
+
+OUTPUTS
+
+Exit angle: 18.209671464244213
+Nozzle expansion ratio: 8.027777777777779
+Chamber contraction ratio: 2.7777777777777777
+Geometry export file: None (demo)

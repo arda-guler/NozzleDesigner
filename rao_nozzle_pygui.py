@@ -1,7 +1,7 @@
 #   ---RAO NOZZLE DESIGNER---
 #   METU ROCKET SOCIETY, 2021
 
-version = "1.2.0"
+version = "1.2.1"
 
 from dearpygui.core import *
 from dearpygui.simple import *
@@ -113,23 +113,15 @@ def exportFile():
             result_file = open(inputSaveFile, "w")
             result_file.write("Save file version " + str(version) + "\n\n")
             result_file.write("INPUTS\n\n")
-            result_file.write("Throat radius: ")
-            result_file.write(str(last_throat_radius)+"\n")
-            result_file.write("Exit radius: ")
-            result_file.write(str(last_exit_radius)+"\n")
-            result_file.write("Chamber radius: ")
-            result_file.write(str(last_chamber_radius)+"\n")
-            result_file.write("Throat angle (delta n): ")
-            result_file.write(str(last_delta_n)+"\n")
-            result_file.write("Theta FC: ")
-            result_file.write(str(last_theta_FC)+"\n")
+            result_file.write("Throat radius: " + str(last_throat_radius) + "\n")
+            result_file.write("Exit radius: " + str(last_exit_radius) + "\n")
+            result_file.write("Chamber radius: " + str(last_chamber_radius)+"\n")
+            result_file.write("Throat angle (delta n): " + str(last_delta_n)+"\n")
+            result_file.write("Theta FC: " + str(last_theta_FC) + "\n")
             result_file.write("\nOUTPUTS\n\n")
-            result_file.write("Exit angle: ")
-            result_file.write(str(get_value("exit_angle"))+"\n")
-            result_file.write("Nozzle expansion ratio: ")
-            result_file.write(str(get_value("nozzle_expansion_ratio"))+"\n")
-            result_file.write("Chamber contraction ratio: ")
-            result_file.write(str(get_value("chamber_contraction_ratio"))+"\n")
+            result_file.write("Exit angle: " + str(get_value("exit_angle"))+"\n")
+            result_file.write("Nozzle expansion ratio: " + str(get_value("nozzle_expansion_ratio")) + "\n")
+            result_file.write("Chamber contraction ratio: " + str(get_value("chamber_contraction_ratio")) + "\n")
             result_file.write("Geometry export file: " + exportFile + "\n")
             result_file.close()
             log_info("Inputs saved in " + inputSaveFile, logger = "Logs")
@@ -318,6 +310,7 @@ def computeNozzle():
         loop3_count += 1
         
         if second_curve_y > exit_radius:
+            log_info("Run [" + str(calc_run_number) + "] complete." , logger="Logs")
             break
         
         if loop3_count > 100000:
